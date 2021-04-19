@@ -1,0 +1,213 @@
+#!/system/bin/sh
+#########################################################################
+# AudioTest chmod 777 AudioTest
+#
+# adb push AudioTest system/bin
+# for A1512 project,
+#########################################################################
+
+
+#HQ:tanyang
+#input:    MainMic = 1, sub mic = 2, headset mic = 3
+#output:   receiver =1, headset = 2, speaker = 3, capture = 4
+#on-off:   on = 1, off =0
+
+
+function print_usage(){
+    echo "Usage:"$0" input output on-off"
+    echo "input    [MainMic = 1]  [sub mic = 2] [headset mic = 3]"
+    echo "output   [receiver = 1] [headset = 2] [speaker = 3] [capture = 4]"
+    echo "on-off   [on = 1]       [off = 0]"
+}
+
+case $1 in
+    "1") #Main Mic
+	case $2 in
+	    "2") #headset
+	     	case $3 in
+		     "1")
+			  AudioSetParam SET_LOOPBACK_TYPE=1,2;
+			  tinymix Headset_PGAL_GAIN 5;
+			  tinymix Headset_PGAR_GAIN 5;
+			  tinymix Audio_PGA1_Setting 3;
+			  tinymix Audio_PGA2_Setting 3;
+			  echo "open MainMic to headset loopback";
+		      ;;
+		     "0")
+			  AudioSetParam SET_LOOPBACK_TYPE=0;
+			  echo "close MainMic to headset loopback";
+		      ;;
+			*)
+			  print_usage
+        		  exit 1
+		      ;;
+		  esac
+	     ;;
+	   "4") #capture
+               case $3 in
+		     "1")
+                          echo "open path to capture main mic"
+			  tinymix "UL1_CH1 ADDA_UL_CH1" "1"
+			  tinymix "UL1_CH2 ADDA_UL_CH2" "1"
+			  tinymix "Mic Type Mux" "ACC"
+			  tinymix "ADC L Mux" "Left Preamplifier"
+			  tinymix "ADC R Mux" "Right Preamplifier"
+			  tinymix "PGA L Mux" "AIN0"
+                          tinymix "PGA R Mux" "AIN0"
+			  echo "start capture main mic"
+			  tinycap /sdcard/miccapture.wav -D 0 -d 4 -c 2 -r 48000 -b 16 -n 2 -p 1024
+			  echo "end capture main mic"
+		      ;;
+		     "0")
+			  echo "close path to capture main mic"
+			  tinycap_pid=$(ps -A| grep tinycap |awk '{print $2}')
+
+			  if [ -z "$tinycap_pid" ];
+			  then
+			      echo "not find tinycap process,please check it"
+			  else
+			      tinymix "UL1_CH1 ADDA_UL_CH1" "0"
+			      tinymix "UL1_CH2 ADDA_UL_CH2" "0"
+			      kill $tinycap_pid
+			      echo "stop tinycap process pid = $tinycap_pid"
+			  fi
+		      ;;
+		       *)
+			  print_usage
+			  	exit 1
+                      ;;
+                  esac
+	    ;;
+	     *)
+		print_usage
+        	exit 1
+	    ;;
+	esac
+     ;;
+    "2") #subMic
+	case $2 in
+	    "2") #headset
+	     	case $3 in
+		     "1")
+			  AudioSetParam SET_LOOPBACK_TYPE=3,2;
+			  tinymix Headset_PGAL_GAIN 5;
+			  tinymix Headset_PGAR_GAIN 5;
+			  tinymix Audio_PGA1_Setting 3;
+			  tinymix Audio_PGA2_Setting 3;
+			  echo "open SubMic to headset loopback";
+		      ;;
+		     "0")
+			  AudioSetParam SET_LOOPBACK_TYPE=0;
+			  echo "close SubMic to headset loopback";
+		      ;;
+		      *)
+			  print_usage
+			  exit 1
+                      ;;
+		  esac
+	      ;;
+	    "4") #caputre
+                  case $3 in
+		       "1")
+			    echo "open path to capture sub mic"
+			    tinymix "UL1_CH1 ADDA_UL_CH1" "1"
+			    tinymix "UL1_CH2 ADDA_UL_CH2" "1"
+			    tinymix "Mic Type Mux" "ACC"
+			    tinymix "ADC L Mux" "Left Preamplifier"
+			    tinymix "ADC R Mux" "Right Preamplifier"
+			    tinymix "PGA L Mux" "AIN2"
+                            tinymix "PGA R Mux" "AIN2"
+			    echo "start capture sub mic"
+			    tinycap /sdcard/miccapture.wav -D 0 -d 4 -c 2 -r 48000 -b 16 -n 2 -p 1024
+			    echo "end capture sub mic"
+		        ;;
+		       "0")
+			    echo "close path to capture sub mic"
+			    tinycap_pid=$(ps -A| grep tinycap |awk '{print $2}')
+
+			    if [ -z "$tinycap_pid" ];
+			    then
+			        echo "not find tinycap process,please check it"
+			    else
+			        tinymix "UL1_CH1 ADDA_UL_CH1" "0"
+			        tinymix "UL1_CH2 ADDA_UL_CH2" "0"
+			        kill $tinycap_pid
+			        echo "stop tinycap process pid = $tinycap_pid"
+			    fi
+		       ;;
+		       *)
+			    print_usage
+			    exit 1
+		       ;;
+		  esac
+	    ;;
+	    *)
+		 print_usage
+		 exit 1
+	    ;;
+	esac
+     ;;
+    "3") #headset mic
+	case $2 in
+	    "1") #receiver
+	     	case $3 in
+		     "1")
+			  AudioSetParam SET_LOOPBACK_TYPE=2,1;
+			  tinymix Handset_PGA_GAIN 3;
+			  tinymix Audio_PGA1_Setting 4;
+			  tinymix Audio_PGA2_Setting 4;
+			  echo "open headset mic to receiver loopback";
+		      ;;
+		     "0")
+			  AudioSetParam SET_LOOPBACK_TYPE=0;
+			  echo "close headset mic to receiver loopback";
+		      ;;
+		       *)
+			  print_usage
+			  exit 1
+		      ;;
+		  esac
+	     ;;
+	    "3") #speaker
+	     	case $3 in
+		     "1")
+			  AudioSetParam SET_LOOPBACK_TYPE=2,3;
+			  tinymix Audio_PGA1_Setting 3;
+			  tinymix Audio_PGA2_Setting 3;
+			  echo "open headset mic to speaker loopback";
+		      ;;
+		     "0")
+			  AudioSetParam SET_LOOPBACK_TYPE=0;
+			  echo "close headset mic to speaker loopback";
+		      ;;
+		      "3")
+			  echo "speaker start"
+			  tinymix "ADDA_DL_CH1 DL1_CH1" "1"
+			  tinymix "Ext_Speaker_Amp Switch" "1"
+			  tinymix "LOL Mux" "Playback"
+			  tinyplay system/etc/xiaomi_speaker.wav
+			  echo "speaker end"
+			  tinymix "ADDA_DL_CH1 DL1_CH1" "0"
+			  tinymix "Ext_Speaker_Amp Switch" "0"
+			  tinymix "LOL Mux" "Open"
+                          echo "close speaker playback"
+		      ;;
+		      *)
+			  print_usage
+	    		  exit 1
+		      ;;
+		  esac
+	     ;;
+	     *)
+		print_usage
+		exit 1
+	     ;;
+	esac
+     ;;
+    *)
+        print_usage
+        exit 1
+    ;;
+esac
+
+exit 0

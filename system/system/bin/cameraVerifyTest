@@ -1,0 +1,55 @@
+#!/system/bin/sh
+removeInfo="Remove old picture successfully."
+if [ "$1" = "--help" ]; then
+   echo "verify usage: "$0" test type"
+   echo "test type: [calibrationTest = 1]   [veriticationTest = 2]"
+   exit 0
+fi
+
+if [ "$#" != "1" ]; then
+   echo "The number of input parameters is not correct."
+   exit 0
+fi
+
+if [[ "$1" != [1-2] ]]; then
+   echo "First Parameter is error. Please input correct First parameter[0-1]"
+   exit 0;
+fi
+
+if [ "$1" = "1" ]; then
+   lunchtype=1
+   Path="/sdcard/cameraCalibrate_pass"
+   if [ -a "$Path" ]; then
+   rm $Path
+   echo $removeInfo
+   fi
+elif [ "$1" = "2" ]; then
+   lunchtype=2
+   Path="/sdcard/cameraVerity_pass"
+   if [ -a "$Path" ]; then
+   rm $Path
+   echo $removeInfo
+   fi
+fi
+
+am start -n com.arcsoft.nobracketcalibration\/com.arcsoft.calibration.Activity.MainActivity --ei "LUNCH_TYPE_KEY" $lunchtype
+
+#exit script after generate picture
+num=0
+while [[ $num -lt 12 ]]
+do
+echo "num ="$num
+if [ -a "$Path" ]; then
+   echo "Test successfully"
+   exit 0
+fi
+let "num++"
+sleep 1
+#echo $num
+done
+
+if [ ! -a "$Path" ]; then
+   echo "Test fail"
+   exit 0
+fi
+exit 0
